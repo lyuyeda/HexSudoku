@@ -1,0 +1,44 @@
+I did not use any test code in particular,
+I just looked at the behavior when the provided test class was run
+
+The various "Untitled #" txt files are prior versions of the HexadecimalSudoku class,
+those marked with " - Success" are the ones that worked
+
+Version 11 did not work, the HexadecimalSudoku.java currently represents Version 10
+
+Box check section fixed, Version 12 now in use
+
+Version 10 clears test 1 in ~1 sec
+  test 2 in ~30-40 sec
+  test 3 in ~6-7 min
+  test 4 in unknown, >1 hr
+  
+Version 12 also works, times unknown
+
+Initially, I tried to get it to check valid values at every step,
+this was dropped in an attempt to make the code simpler,
+I also suspect this would have slowed down the program by forcing it to
+scan the whole array at every step
+
+Version 12 completed all tasks in ~2 hrs
+Huzzah!
+
+Implemented Pair Check section
+
+Version 13 now in use
+
+Version 13 clears test 1 in <1 sec
+  test 2 in ~30-40 sec
+  test 3 in ~6 min
+  test 4 in ~70 min
+  
+There are several lines in solveSudoku that provide times (time from start to some point)
+and also the intermediate solution found by the recursive valueArray, these can be enabled by changing
+"public static boolean printTest" to true
+
+valueArray: a recursive function that only affects the sudoku in ways that are guaranteed to be valid
+
+backtrack: a recursive function that attempts to brute force a solution given a set of possible values
+
+By running valueArray, then backtrack, there are fewer branches for the brute force method to try,
+speeding up the time to solve sudoku

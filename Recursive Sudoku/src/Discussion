@@ -1,0 +1,18 @@
+All of the tests seem to have about the same amount of unfilled values
+I would have to assume that 3 and 4 are difficult due to having few solutions
+
+Tests 3 and 4 take many times longer to complete than 1 and 2,
+the only reason for this that I can think of is that the program has to try
+more values before it reaches a solution.
+
+It could be that tests 1 and 2 have correct solutions mostly made of the lower
+numbered values, the values that most implementations would check for first.
+
+It could be that tests 1 and 2 just have more possible solutions, so one is
+stumbled upon earlier.
+
+It could be that tests 1 and 2 allow you to eliminate bad branches earlier on,
+thus allowing you to skip large, resource intensive, invalid possibilities.
+
+Really, I don't know which of these is the problem but tests 3 and 4 evidently
+have to go through far more possibilities before finding the solution.

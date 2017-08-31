@@ -1,0 +1,491 @@
+package edu.hawaii.ics211;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+
+/**
+ * Class for recursively finding a solution to a Hexadecimal Sudoku problem.
+ * 
+ * @author Biagioni, Edoardo, Cam Moore
+ * @date August 5, 2016
+ * @missing solveSudoku, to be implemented by the students in ICS 211
+ */
+public class HexadecimalSudoku {
+
+  /**
+   * Find an assignment of values to sudoku cells that makes the sudoku valid.
+   * 
+   * @param sudoku the sudoku to be solved
+   * @return whether a solution was found if a solution was found, the sudoku is filled in with the solution if no
+   * solution was found, restores the sudoku to its original value
+   */
+  public static boolean solveSudoku(int[][] sudoku) {
+    long startTime = System.nanoTime();
+    System.out.println("Begin: " + ((System.nanoTime() - startTime) / 1000000000.0));
+    int size = sudoku.length;
+    int[][] original = new int[size][size];
+    ArrayList[][] validValues = new ArrayList[size][size];
+    for (int i = 0; i < sudoku.length; i++) {
+      for (int j = 0; j < sudoku[i].length; j++) {
+        original[i][j] = sudoku[i][j];
+      }
+    }
+    for (int i = 0; i < sudoku.length; i++) {
+      for (int j = 0; j < sudoku[i].length; j++) {
+        validValues[i][j] = legalValues(sudoku, i, j);
+      }
+    }
+    System.out.println("Value Check Start: " + ((System.nanoTime() - startTime) / 1000000000.0));
+    valueArray(sudoku, validValues);
+    System.out.println("Intermediate:\n" + HexadecimalSudoku.toString(sudoku, false));
+    System.out.println("Value Check End: " + ((System.nanoTime() - startTime) / 1000000000.0));
+    ArrayList[][] filled = fillSet(sudoku);
+    System.out.println("Brute Force Start: " + ((System.nanoTime() - startTime) / 1000000000.0));
+    boolean result = backtrack(sudoku, validValues, filled, 0, 0);
+    if (!result) {
+      sudoku = original;
+    }
+    System.out.println("Brute Force End: " + ((System.nanoTime() - startTime) / 1000000000.0));
+    return result;
+  }
+
+
+  /**
+   * Find the legal values for the given sudoku and cell.
+   * 
+   * @param sudoku the sudoku being solved.
+   * @param row the row of the cell to get values for.
+   * @param column the column of the cell.
+   * @return an ArrayList of the valid values.
+   */
+  private static ArrayList<Integer> legalValues(int[][] sudoku, int row, int column) {
+    ArrayList<Integer> validValues = new ArrayList<Integer>(16);
+    if (sudoku[row][column] != -1) {
+      validValues.add(sudoku[row][column]);
+    }
+    else {
+      for (int i = 0; i < 16; i++) {
+        validValues.add(i);
+      }
+    }
+    ArrayList<Integer> removalIndex = new ArrayList<Integer>(16);
+    for (int i = 0; i < validValues.size(); i++) {
+      for (int j = 0; j < sudoku.length; j++) {
+        if ((validValues.get(i) == sudoku[j][column] && j != row)
+            || (validValues.get(i) == sudoku[row][j] && j != column)) {
+          if (removalIndex.indexOf(i) == -1) {
+            removalIndex.add(i);
+          }
+        }
+      }
+      for (int j = 0; j < 4; j++) {
+        for (int k = 0; k < 4; k++) {
+          int testRow = (row / 4 * 4) + j;
+          int testCol = (column / 4 * 4) + k;
+          if ((testRow != row) && (testCol != column) && (validValues.get(i) == sudoku[testRow][testCol])) {
+            if (removalIndex.indexOf(i) == -1) {
+              removalIndex.add(i);
+            }
+          }
+        }
+      }
+    }
+    for (int i = removalIndex.size() - 1; i >= 0; i--) {
+      validValues.remove(removalIndex.get(i));
+    }
+    return validValues;
+  }
+
+
+  /**
+   * 
+   * @param sudoku
+   * @return the set of values filled for each row, column, and box
+   */
+  private static ArrayList[][] fillSet(int[][] sudoku) {
+    ArrayList[][] list = new ArrayList[3][16];
+    list[0] = colFillSet(sudoku);
+    list[1] = rowFillSet(sudoku);
+    list[2] = boxFillSet(sudoku);
+    return list;
+  }
+
+
+  /**
+   * 
+   * @param sudoku
+   * @return the set of values filled for each column
+   */
+  private static ArrayList[] colFillSet(int[][] sudoku) {
+    ArrayList[] list = new ArrayList[16];
+    for (int i = 0; i < sudoku.length; i++) {
+      list[i] = colFilled(sudoku, i);
+    }
+    return list;
+  }
+
+
+  /**
+   * 
+   * @param sudoku
+   * @return the set of values filled for each row
+   */
+  private static ArrayList[] rowFillSet(int[][] sudoku) {
+    ArrayList[] list = new ArrayList[16];
+    for (int i = 0; i < sudoku.length; i++) {
+      list[i] = rowFilled(sudoku, i);
+    }
+    return list;
+  }
+
+
+  /**
+   * 
+   * @param sudoku
+   * @return the set of values filled for each box
+   */
+  private static ArrayList[] boxFillSet(int[][] sudoku) {
+    ArrayList[] list = new ArrayList[16];
+    for (int i = 0; i < sudoku.length; i++) {
+      list[i] = boxFilled(sudoku, i / 4, i % 4);
+    }
+    return list;
+  }
+
+
+  /**
+   * 
+   * @param sudoku
+   * @param col
+   * @return the set of values filled for the given column
+   */
+  private static ArrayList<Integer> colFilled(int[][] sudoku, int col) {
+    ArrayList<Integer> list = new ArrayList<Integer>(16);
+    for (int i = 0; i < sudoku.length; i++) {
+      if (sudoku[i][col] != -1) {
+        list.add(sudoku[i][col]);
+      }
+    }
+    list.sort(new IntComp());
+    return list;
+  }
+
+
+  /**
+   * 
+   * @param sudoku
+   * @param row
+   * @return the set of values filled for the given row
+   */
+  private static ArrayList<Integer> rowFilled(int[][] sudoku, int row) {
+    ArrayList<Integer> list = new ArrayList<Integer>(16);
+    for (int i = 0; i < sudoku.length; i++) {
+      if (sudoku[row][i] != -1) {
+        list.add(sudoku[row][i]);
+      }
+    }
+    list.sort(new IntComp());
+    return list;
+  }
+
+
+  /**
+   * 
+   * @param sudoku
+   * @param boxr
+   * @param boxc
+   * @return the set of values filled for the given box
+   */
+  private static ArrayList<Integer> boxFilled(int[][] sudoku, int boxr, int boxc) {
+    ArrayList<Integer> list = new ArrayList<Integer>(16);
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        if (sudoku[boxr + i][boxc + j] != -1) {
+          list.add(sudoku[boxr + i][boxc + j]);
+        }
+      }
+    }
+    list.sort(new IntComp());
+    return list;
+  }
+
+
+  private static boolean regionCheck(ArrayList[][] filled, int row, int col, int val) {
+    if ((filled[0][row].indexOf(val) != -1) || (filled[1][col].indexOf(val) != -1)
+        || (filled[2][(row / 4) * 4 + (col / 4)].indexOf(val) != -1)) {
+      return false;
+    }
+    return true;
+  }
+
+
+  private static void valueArray(int[][] sudoku, ArrayList[][] validValues) {
+    int size = sudoku.length;
+    int[][] original = new int[size][size];
+    ArrayList[][] origVal = new ArrayList[size][size];
+    save(sudoku, validValues, original, origVal);
+    // By cell check
+    for (int i = 0; i < sudoku.length; i++) {
+      for (int j = 0; j < sudoku[i].length; j++) {
+        ArrayList newValid = legalValues(sudoku, i, j);
+        ArrayList<Integer> removalIndex = new ArrayList<Integer>(16);
+        for (int k = 0; k < validValues[i][j].size(); k++) {
+          if (newValid.indexOf(validValues[i][j].get(k)) == -1) {
+            if (removalIndex.indexOf(k) == -1) {
+              removalIndex.add(k);
+            }
+          }
+        }
+        for (int k = removalIndex.size() - 1; k >= 0; k--) {
+          validValues[i][j].remove(removalIndex.get(k));
+        }
+        // Single possible value
+        if (validValues[i][j].size() == 1) {
+          sudoku[i][j] = (int) validValues[i][j].get(0);
+        }
+      }
+    }
+    // By region check
+    for (int i = 0; i < sudoku.length; i++) {
+      // Row check
+      int[] numCount = new int[sudoku.length];
+      for (int j = 0; j < sudoku.length; j++) {
+        for (int k = 0; k < validValues[i][j].size(); k++) {
+          numCount[(int) validValues[i][j].get(k)]++;
+        }
+      }
+      for (int j = 0; j < numCount.length; j++) {
+        if (numCount[j] == 1) {
+          for (int k = 0; k < validValues.length; k++) {
+            if (validValues[i][k].indexOf(j) != -1) {
+              sudoku[i][k] = j;
+            }
+          }
+        }
+      }
+      // Column check
+      numCount = new int[sudoku.length];
+      for (int j = 0; j < sudoku.length; j++) {
+        for (int k = 0; k < validValues[j][i].size(); k++) {
+          numCount[(int) validValues[j][i].get(k)]++;
+        }
+      }
+      for (int j = 0; j < numCount.length; j++) {
+        if (numCount[j] == 1) {
+          for (int k = 0; k < validValues.length; k++) {
+            if (validValues[k][i].indexOf(j) != -1) {
+              sudoku[k][i] = j;
+            }
+          }
+        }
+      }
+    }
+    // Box check
+    /*
+     * int[] numCount = new int[sudoku.length]; for (int i = 0; i < 4; i++) { for (int j = 0; j < 4; j++) { for (int k =
+     * 0; k < 4; k++) { for (int l = 0; l < 4; l++) { int row = (i * 4) + k; int col = (j * 4) + l; for (int m = 0; m <
+     * validValues[row][col].size(); m++) { numCount[(int) validValues[row][col].get(m)]++; } } } for (int k = 0; k <
+     * numCount.length; k++) { if (numCount[k] == 1) { for (int l = 0; l < 4; l++) { for (int m = 0; m < 4; m++) { int
+     * row = (i * 4) + k; int col = (j * 4) + l; if (validValues[row][col].indexOf(k) != -1) { sudoku[row][col] = k; } }
+     * } } } } }
+     */
+    if (original.equals(sudoku) && origVal.equals(validValues)) {
+      valueArray(sudoku, validValues);
+    }
+  }
+
+
+  private static boolean backtrack(int[][] sudoku, ArrayList[][] validValues, ArrayList[][] filled, int row,
+      int column) {
+    int size = sudoku.length;
+    int[][] original = new int[size][size];
+    save(sudoku, original);
+    if (efficientFilled(sudoku)) {
+      return checkSudoku(sudoku, false);
+    }
+    for (int i = 0; i < validValues[row][column].size(); i++) {
+      if (checkSudoku(sudoku, false)) {
+        // if (regionCheck(filled, row, column, (int) validValues[row][column].get(i))) {
+        // filled[0][row].add((int) validValues[row][column].get(i));
+        // filled[1][column].add((int) validValues[row][column].get(i));
+        // filled[2][(row / 4) * 4 + (column / 4)].add((int) validValues[row][column].get(i));
+        sudoku[row][column] = (int) validValues[row][column].get(i);
+        if (backtrack(sudoku, validValues, filled, (row + ((column + 1) / size)) % size, (column + 1) % size)) {
+          return true;
+        }
+        else {
+          revert(sudoku, original);
+          // filled[0][row].remove(validValues[row][column].get(i));
+          // filled[1][column].remove(validValues[row][column].get(i));
+          // filled[2][(row / 4) * 4 + (column / 4)].remove(validValues[row][column].get(i));
+        }
+      }
+    }
+    return false;
+  }
+
+
+  public static void save(int[][] sudoku, int[][] original) {
+    int size = sudoku.length;
+    for (int i = 0; i < size; i++) {
+      for (int j = 0; j < size; j++) {
+        original[i][j] = sudoku[i][j];
+      }
+    }
+  }
+
+
+  public static void revert(int[][] sudoku, int[][] original) {
+    int size = sudoku.length;
+    for (int i = 0; i < size; i++) {
+      for (int j = 0; j < size; j++) {
+        sudoku[i][j] = original[i][j];
+      }
+    }
+  }
+
+
+  public static void save(int[][] sudoku, ArrayList[][] validValues, int[][] original, ArrayList[][] origVal) {
+    int size = sudoku.length;
+    for (int i = 0; i < size; i++) {
+      for (int j = 0; j < size; j++) {
+        original[i][j] = sudoku[i][j];
+        origVal[i][j] = validValues[i][j];
+      }
+    }
+  }
+
+
+  public static void revert(int[][] sudoku, ArrayList[][] validValues, int[][] original, ArrayList[][] origVal) {
+    int size = sudoku.length;
+    for (int i = 0; i < size; i++) {
+      for (int j = 0; j < size; j++) {
+        sudoku[i][j] = original[i][j];
+        validValues[i][j] = origVal[i][j];
+      }
+    }
+  }
+
+
+  /**
+   * checks that the sudoku rules hold in this sudoku puzzle. cells that contain 0 are not checked.
+   * 
+   * @param sudoku the sudoku to be checked
+   * @param printErrors whether to print the error found, if any
+   * @return true if this sudoku obeys all of the sudoku rules, otherwise false
+   */
+  public static boolean checkSudoku(int[][] sudoku, boolean printErrors) {
+    if (sudoku.length != 16) {
+      if (printErrors) {
+        System.out.println("sudoku has " + sudoku.length + " rows, should have 16");
+      }
+      return false;
+    }
+    for (int i = 0; i < sudoku.length; i++) {
+      if (sudoku[i].length != 16) {
+        if (printErrors) {
+          System.out.println("sudoku row " + i + " has " + sudoku[i].length + " cells, should have 16");
+        }
+        return false;
+      }
+    }
+    /* check each cell for conflicts */
+    for (int i = 0; i < sudoku.length; i++) {
+      for (int j = 0; j < sudoku[i].length; j++) {
+        int cell = sudoku[i][j];
+        if (cell == -1) {
+          continue; /* blanks are always OK */
+        }
+        if ((cell < 0) || (cell >= 16)) {
+          if (printErrors) {
+            System.out
+                .println("sudoku row " + i + " column " + j + " has illegal value " + String.format("%02X", cell));
+          }
+          return false;
+        }
+        /* does it match any other value in the same row? */
+        for (int m = 0; m < sudoku[i].length; m++) {
+          if ((j != m) && (cell == sudoku[i][m])) {
+            if (printErrors) {
+              System.out.println(
+                  "sudoku row " + i + " has " + String.format("%X", cell) + " at both positions " + j + " and " + m);
+            }
+            return false;
+          }
+        }
+        /* does it match any other value it in the same column? */
+        for (int k = 0; k < sudoku.length; k++) {
+          if ((i != k) && (cell == sudoku[k][j])) {
+            if (printErrors) {
+              System.out.println(
+                  "sudoku column " + j + " has " + String.format("%X", cell) + " at both positions " + i + " and " + k);
+            }
+            return false;
+          }
+        }
+        /* does it match any other value in the 4x4? */
+        for (int k = 0; k < 4; k++) {
+          for (int m = 0; m < 4; m++) {
+            int testRow = (i / 4 * 4) + k; /* test this row */
+            int testCol = (j / 4 * 4) + m; /* test this col */
+            if ((i != testRow) && (j != testCol) && (cell == sudoku[testRow][testCol])) {
+              if (printErrors) {
+                System.out.println("sudoku character " + String.format("%X", cell) + " at row " + i + ", column " + j
+                    + " matches character at row " + testRow + ", column " + testCol);
+              }
+              return false;
+            }
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+
+  private static boolean efficientFilled(int[][] sudoku) {
+    for (int i = 15; i >= 0; i--) {
+      for (int j = 15; j >= 0; j--) {
+        if (sudoku[i][j] == -1) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+
+  /**
+   * Converts the sudoku to a printable string
+   * 
+   * @param sudoku the sudoku to be converted
+   * @param debug whether to check for errors
+   * @return the printable version of the sudoku
+   */
+  public static String toString(int[][] sudoku, boolean debug) {
+    if ((!debug) || (checkSudoku(sudoku, true))) {
+      String result = "";
+      for (int i = 0; i < sudoku.length; i++) {
+        if (i % 4 == 0) {
+          result += "+---------+---------+---------+---------+\n";
+        }
+        for (int j = 0; j < sudoku[i].length; j++) {
+          if (j % 4 == 0) {
+            result += "| ";
+          }
+          if (sudoku[i][j] == -1) {
+            result += "  ";
+          }
+          else {
+            result += String.format("%X", sudoku[i][j]) + " ";
+          }
+        }
+        result += "|\n";
+      }
+      result += "+---------+---------+---------+---------+\n";
+      return result;
+    }
+    return "illegal sudoku";
+  }
+}

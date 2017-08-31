@@ -1,0 +1,343 @@
+package edu.hawaii.ics211;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+/**
+ * Class for recursively finding a solution to a Hexadecimal Sudoku problem.
+ * 
+ * @author Biagioni, Edoardo, Cam Moore
+ * @date August 5, 2016
+ * @missing solveSudoku, to be implemented by the students in ICS 211
+ */
+public class HexadecimalSudoku {
+
+  /**
+   * Find an assignment of values to sudoku cells that makes the sudoku valid.
+   * 
+   * @param sudoku the sudoku to be solved
+   * @return whether a solution was found if a solution was found, the sudoku is filled in with the solution if no
+   * solution was found, restores the sudoku to its original value
+   */
+  public static boolean solveSudoku(int[][] sudoku) {
+    int[][] original = new int[sudoku.length][sudoku.length];
+    for (int i = 0; i < sudoku.length; i++) {
+      for (int j = 0; j < sudoku[i].length; j++) {
+        original[i][j] = sudoku[i][j];
+      }
+    }
+    ArrayList[][] validValues = new ArrayList[16][16];
+    for (int i = 0; i < sudoku.length; i++) {
+      for (int j = 0; j < sudoku[i].length; j++) {
+        validValues[i][j] = legalValues(sudoku, i, j);
+      }
+    }
+    boolean result = procedural(sudoku, validValues);
+    if (!result) {
+      sudoku = original;
+    }
+    return result;
+  }
+
+
+  /**
+   * Find the legal values for the given sudoku and cell.
+   * 
+   * @param sudoku the sudoku being solved.
+   * @param row the row of the cell to get values for.
+   * @param column the column of the cell.
+   * @return an ArrayList of the valid values.
+   */
+  private static ArrayList<Integer> legalValues(int[][] sudoku, int row, int column) {
+    ArrayList<Integer> validValues = new ArrayList<Integer>();
+    if (sudoku[row][column] != -1) {
+      validValues.add(sudoku[row][column]);
+    }
+    else {
+      for (int i = 0; i < 16; i++) {
+        validValues.add(i);
+      }
+      // Code
+    }
+    return validValues;
+  }
+
+
+  private static void valueArray(int[][] sudoku, ArrayList[][] validValues) {
+    for (int i = 0; i < sudoku.length; i++) {
+      for (int j = 0; j < sudoku[i].length; j++) {
+        ArrayList newValid = legalValues(sudoku, i, j);
+        for (int k = 0; k < validValues[i][j].size(); k++) {
+          if (newValid.indexOf(validValues[i][j].get(k)) == -1) {
+            validValues[i][j].remove(k);
+          }
+        }
+      }
+    }
+  }
+
+
+  private static void weedValues(ArrayList[][] validValues) {
+    // Code
+  }
+
+
+  private static boolean procedural(int[][] sudoku, ArrayList[][] validValues) {
+    int[][] original = new int[sudoku.length][sudoku.length];
+    for (int i = 0; i < sudoku.length; i++) {
+      for (int j = 0; j < sudoku[i].length; j++) {
+        original[i][j] = sudoku[i][j];
+      }
+    }
+    valueArray(sudoku, validValues);
+    weedValues(validValues);
+    for (int i = 0; i < sudoku.length; i++) {
+      for (int j = 0; j < sudoku[i].length; j++) {
+        if (validValues[i][j].size() == 0) {
+          // Unsolvable due to a lack of valid values
+          return false;
+        }
+        else if (validValues[i][j].size() == 1) {
+          sudoku[i][j] = (int) validValues[i][j].get(0);
+        }
+      }
+    }
+    if (/* checkSudoku(sudoku, false) && */isFilled(sameSudoku(original, sudoku))) {
+      if (isFilled(sudoku)) {
+        return true;
+      }
+      else {
+        // Probably unsolvable due to multiple possible solutions
+        // Attempt backtrack
+        if (backtrack(sudoku, validValues)) {
+          System.out.println("Solved via Backtrack, Solution may not be Unique");
+          /*
+           * for (int i = sudoku.length - 1; i >= 0; i++) { for (int j = sudoku[i].length; j >= 0; j++) { if
+           * (validValues[i][j].size() > 1) { validValues[i][j].remove(0); break; } } } if (backtrack(sudoku,
+           * validValues)) { System.out.println("Solution is not Unique"); } else {
+           * System.out.println("Solution is Unique"); }
+           */
+          return true;
+        }
+        else {
+          return false;
+        }
+      }
+    }
+    return solveSudoku(sudoku);
+  }
+
+
+  private static boolean backtrack(int[][] sudoku, ArrayList[][] validValues) {
+    int[][] original = new int[sudoku.length][sudoku.length];
+    ArrayList[][] origVal = new ArrayList[16][16];
+    for (int i = 0; i < sudoku.length; i++) {
+      for (int j = 0; j < sudoku[i].length; j++) {
+        original[i][j] = sudoku[i][j];
+        origVal[i][j] = validValues[i][j];
+      }
+    }
+    valueArray(sudoku, validValues);
+    weedValues(validValues);
+    for (int i = 0; i < sudoku.length; i++) {
+      for (int j = 0; j < sudoku[i].length; j++) {
+        int size = validValues[i][j].size();
+        if (size == 0) {
+          for (int k = 0; k < sudoku.length; k++) {
+            for (int l = 0; l < sudoku[k].length; l++) {
+              sudoku[k][l] = original[k][l];
+              validValues[k][l] = origVal[k][l];
+            }
+          }
+          return false;
+        }
+        else {
+          sudoku[i][j] = (int) validValues[i][j].get(0);
+        }
+      }
+    }
+    if (checkSudoku(sudoku, false)) {
+      return true;
+    }
+    // Fix
+    boolean options = false;
+    if (!backtrack(sudoku, validValues)) {
+      for (int i = sudoku.length - 1; i >= 0; i++) {
+        for (int j = sudoku[i].length; j >= 0; j++) {
+          if (validValues[i][j].size() > 1) {
+            validValues[i][j].remove(0);
+            options = true;
+            break;
+          }
+        }
+      }
+      if (!options) {
+        for (int i = 0; i < sudoku.length; i++) {
+          for (int j = 0; j < sudoku[i].length; j++) {
+            sudoku[i][j] = original[i][j];
+            validValues[i][j] = origVal[i][j];
+          }
+        }
+        return false;
+      }
+    }
+    return true;
+  }
+
+
+  /**
+   * checks that the sudoku rules hold in this sudoku puzzle. cells that contain 0 are not checked.
+   * 
+   * @param sudoku the sudoku to be checked
+   * @param printErrors whether to print the error found, if any
+   * @return true if this sudoku obeys all of the sudoku rules, otherwise false
+   */
+  public static boolean checkSudoku(int[][] sudoku, boolean printErrors) {
+    if (sudoku.length != 16) {
+      if (printErrors) {
+        System.out.println("sudoku has " + sudoku.length + " rows, should have 16");
+      }
+      return false;
+    }
+    for (int i = 0; i < sudoku.length; i++) {
+      if (sudoku[i].length != 16) {
+        if (printErrors) {
+          System.out.println("sudoku row " + i + " has " + sudoku[i].length + " cells, should have 16");
+        }
+        return false;
+      }
+    }
+    /* check each cell for conflicts */
+    for (int i = 0; i < sudoku.length; i++) {
+      for (int j = 0; j < sudoku[i].length; j++) {
+        int cell = sudoku[i][j];
+        if (cell == -1) {
+          continue; /* blanks are always OK */
+        }
+        if ((cell < 0) || (cell >= 16)) {
+          if (printErrors) {
+            System.out
+                .println("sudoku row " + i + " column " + j + " has illegal value " + String.format("%02X", cell));
+          }
+          return false;
+        }
+        /* does it match any other value in the same row? */
+        for (int m = 0; m < sudoku[i].length; m++) {
+          if ((j != m) && (cell == sudoku[i][m])) {
+            if (printErrors) {
+              System.out.println(
+                  "sudoku row " + i + " has " + String.format("%X", cell) + " at both positions " + j + " and " + m);
+            }
+            return false;
+          }
+        }
+        /* does it match any other value it in the same column? */
+        for (int k = 0; k < sudoku.length; k++) {
+          if ((i != k) && (cell == sudoku[k][j])) {
+            if (printErrors) {
+              System.out.println(
+                  "sudoku column " + j + " has " + String.format("%X", cell) + " at both positions " + i + " and " + k);
+            }
+            return false;
+          }
+        }
+        /* does it match any other value in the 4x4? */
+        for (int k = 0; k < 4; k++) {
+          for (int m = 0; m < 4; m++) {
+            int testRow = (i / 4 * 4) + k; /* test this row */
+            int testCol = (j / 4 * 4) + m; /* test this col */
+            if ((i != testRow) && (j != testCol) && (cell == sudoku[testRow][testCol])) {
+              if (printErrors) {
+                System.out.println("sudoku character " + String.format("%X", cell) + " at row " + i + ", column " + j
+                    + " matches character at row " + testRow + ", column " + testCol);
+              }
+              return false;
+            }
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+
+  /**
+   * Checks the sudoku returning true if all cells are filled. Does not check validity.
+   * 
+   * @return true if all cells are filled, false otherwise.
+   */
+  private static boolean isFilled(int[][] sudoku) {
+    for (int i = 0; i < 16; i++) {
+      for (int j = 0; j < 16; j++) {
+        if (sudoku[i][j] == -1) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+
+  /**
+   * Test whether two sudoku are equal. If not, return a new sudoku that is blank where the two sudoku differ.
+   * 
+   * @param sudoku the sudoku to be checked
+   * @param solution the solution checked
+   * @return null if the two match, and otherwise a sudoku with 0 in every cell that differs.
+   */
+  private static int[][] sameSudoku(int[][] sudoku, int[][] solution) {
+    int[][] result = new int[16][16];
+    for (int i = 0; i < 16; i++) {
+      for (int j = 0; j < 16; j++) {
+        result[i][j] = sudoku[i][j];
+      }
+    }
+    boolean same = true;
+    for (int i = 0; i < 16; i++) {
+      for (int j = 0; j < 16; j++) {
+        if (result[i][j] != solution[i][j]) {
+          same = false;
+          result[i][j] = -1;
+        }
+      }
+    }
+    if (same) {
+      return null;
+    }
+    return result;
+  }
+
+
+  /**
+   * Converts the sudoku to a printable string
+   * 
+   * @param sudoku the sudoku to be converted
+   * @param debug whether to check for errors
+   * @return the printable version of the sudoku
+   */
+  public static String toString(int[][] sudoku, boolean debug) {
+    if ((!debug) || (checkSudoku(sudoku, true))) {
+      String result = "";
+      for (int i = 0; i < sudoku.length; i++) {
+        if (i % 4 == 0) {
+          result += "+---------+---------+---------+---------+\n";
+        }
+        for (int j = 0; j < sudoku[i].length; j++) {
+          if (j % 4 == 0) {
+            result += "| ";
+          }
+          if (sudoku[i][j] == -1) {
+            result += "  ";
+          }
+          else {
+            result += String.format("%X", sudoku[i][j]) + " ";
+          }
+        }
+        result += "|\n";
+      }
+      result += "+---------+---------+---------+---------+\n";
+      return result;
+    }
+    return "illegal sudoku";
+  }
+}
