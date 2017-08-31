@@ -73,12 +73,6 @@ public class HexadecimalSudokuTest {
           if (diff != null) {
             System.out.println("given solution:\n" + HexadecimalSudoku.toString(solution, true));
             System.out.println("difference between solutions:\n" + HexadecimalSudoku.toString(diff, true));
-            /*
-             * I would like to point out now, this indicates the puzzle was invalid, the Sudoku was unsolvable. We're
-             * only getting to this point because our programs are apparently intended to brute force an answer rather
-             * than solving them intelligently, something I would find far more interesting, if more time consuming, to
-             * do. -Logan
-             */
           }
         }
       }
